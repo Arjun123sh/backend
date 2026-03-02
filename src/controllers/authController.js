@@ -41,14 +41,19 @@ const registerUser = async (req, res, next) => {
                 console.error('Email sending error (user created successfully):', error);
             }
 
-            res.status(201).json({
+            const response = {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
                 addresses: user.addresses,
                 token: generateToken(user._id),
-            });
+            };
+
+            if (user.role && user.role !== 'user') {
+                response.role = user.role;
+            }
+
+            res.status(201).json(response);
         }
     } catch (error) {
         next(error);
@@ -67,14 +72,19 @@ const authUser = async (req, res, next) => {
         const user = await User.findOne({ email }).select('+password');
 
         if (user && (await user.matchPassword(password))) {
-            res.json({
+            const response = {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
                 addresses: user.addresses,
                 token: generateToken(user._id),
-            });
+            };
+
+            if (user.role && user.role !== 'user') {
+                response.role = user.role;
+            }
+
+            res.json(response);
         }
     } catch (error) {
         next(error);
@@ -89,13 +99,18 @@ const getUserProfile = async (req, res, next) => {
         const user = await User.findById(req.user._id);
 
         if (user) {
-            res.json({
+            const response = {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
                 addresses: user.addresses || [],
-            });
+            };
+
+            if (user.role && user.role !== 'user') {
+                response.role = user.role;
+            }
+
+            res.json(response);
         } else {
             res.status(404);
             throw new Error('User not found');
@@ -110,8 +125,8 @@ const getUserProfile = async (req, res, next) => {
 // @access  Private
 const addAddress = async (req, res, next) => {
     try {
-        const { address, city, postalCode, country, isDefault } = req.body;
-        console.log('Adding address for user:', req.user._id, { address, city, postalCode, country, isDefault });
+        const { address, city, postalCode, country, phone, isDefault } = req.body;
+        console.log('Adding address for user:', req.user._id, { address, city, postalCode, country, phone, isDefault });
         const user = await User.findById(req.user._id);
 
         if (!user) {
@@ -126,7 +141,7 @@ const addAddress = async (req, res, next) => {
             user.addresses.forEach(addr => addr.isDefault = false);
         }
 
-        user.addresses.push({ address, city, postalCode, country, isDefault: isDefault || user.addresses.length === 0 });
+        user.addresses.push({ address, city, postalCode, country, phone, isDefault: isDefault || user.addresses.length === 0 });
         user.markModified('addresses');
         await user.save();
 
@@ -142,7 +157,7 @@ const addAddress = async (req, res, next) => {
 // @access  Private
 const updateAddress = async (req, res, next) => {
     try {
-        const { address, city, postalCode, country, isDefault } = req.body;
+        const { address, city, postalCode, country, phone, isDefault } = req.body;
         const user = await User.findById(req.user._id);
 
         if (!user) {
@@ -162,7 +177,7 @@ const updateAddress = async (req, res, next) => {
             user.addresses.forEach(addr => addr.isDefault = false);
         }
 
-        user.addresses[addrIndex] = { ...user.addresses[addrIndex].toObject(), address, city, postalCode, country, isDefault };
+        user.addresses[addrIndex] = { ...user.addresses[addrIndex].toObject(), address, city, postalCode, country, phone, isDefault };
         await user.save();
 
         res.json({ addresses: user.addresses });

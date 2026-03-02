@@ -16,7 +16,10 @@ const app = express();
 // Security Middlewares
 app.use(helmet());
 app.use(cors({
-    origin:"*",
+origin: [
+    "http://localhost:8080",   
+    "https://ecommerce-gold-kappa.vercel.app" 
+  ],
     credentials: true
 }));
 
