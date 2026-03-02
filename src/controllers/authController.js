@@ -137,6 +137,17 @@ const addAddress = async (req, res, next) => {
             user.addresses = [];
         }
 
+        if (user.addresses.length >= 3) {
+            return res.status(400).json({ message: 'Maximum of 3 addresses allowed' });
+        }
+
+        if (phone) {
+            const cleanedPhone = phone.replace(/\D/g, "");
+            if (cleanedPhone.length !== 10) {
+                return res.status(400).json({ message: 'Please enter a valid 10-digit phone number' });
+            }
+        }
+
         if (isDefault) {
             user.addresses.forEach(addr => addr.isDefault = false);
         }
@@ -173,11 +184,19 @@ const updateAddress = async (req, res, next) => {
             return res.status(404).json({ message: 'Address not found' });
         }
 
+        if (phone) {
+            const cleanedPhone = phone.replace(/\D/g, "");
+            if (cleanedPhone.length !== 10) {
+                return res.status(400).json({ message: 'Please enter a valid 10-digit phone number' });
+            }
+        }
+
         if (isDefault) {
             user.addresses.forEach(addr => addr.isDefault = false);
         }
 
         user.addresses[addrIndex] = { ...user.addresses[addrIndex].toObject(), address, city, postalCode, country, phone, isDefault };
+        user.markModified('addresses');
         await user.save();
 
         res.json({ addresses: user.addresses });
